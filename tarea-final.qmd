@@ -1,0 +1,104 @@
+---
+title: "Anova ara"
+format: html
+editor: visual
+---
+
+```{r}
+library(googlesheets4)
+library(tidyverse)
+library(emmeans)
+```
+
+importar datos
+
+```{r}
+url <- "https://docs.google.com/spreadsheets/d/1WG5R4V6YrwhvfGJqTa2t2Z12CHmwCF5tfqa3V2lYMZc/edit?gid=1192862999#gid=1192862999"
+
+gs <- url %>%
+  as_sheets_id()# pipe a
+
+Organizado <- gs %>%
+  
+  range_read(sheet = "Organizado") %>%
+  mutate( VARIEDAD = factor(VARIEDAD) , REPET=factor(REPET))
+
+str(Organizado)
+
+```
+
+#MODELO ESTADISTICO
+
+# BRIX
+
+anova_brix \<- aov(BRIX \~ VARIEDAD, data = Organizado)
+
+anova_aa \<- aov(AA \~ VARIEDAD, data = Organizado)
+
+#ANOVA
+
+```{r}
+modelo <- aov(BRIX ~ VARIEDAD, data = Organizado) 
+anova(modelo)
+plot(modelo)
+```
+
+# AA
+
+```{r}
+modelo <- aov(AA ~ VARIEDAD, data = Organizado) 
+anova(modelo)
+plot(modelo)
+```
+
+#COMPARACIÓN DE MEDIAS
+
+```{r}
+library(emmeans)
+library(multcomp)
+emm <- emmeans(modelo, ~ VARIEDAD)
+emm
+
+```
+
+
+```{r}
+library(emmeans)
+library(multcomp)
+
+emm <- emmeans(modelo, ~ VARIEDAD)
+
+cm <- cld(emm, alpha = 0.05, Letters = letters, adjust = "tukey")
+
+cm
+
+```
+
+#GRÁFICO
+
+```{r}
+library(emmeans)
+library(inti)
+
+plot_smr(data = cm
+         , x = "VARIEDAD"
+         , y = "emmean"
+         , error = "SE"
+         , sig = ".group"
+         , type = "bar"
+         , ylab= "Brix"
+         )
+```
+
+PCA
+
+```{r}
+rs <- Organizado %>%
+  group_by(VARIEDAD) %>%
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)))
+
+library(FactoMineR)
+
+mv <- rs %>% 
+  PCA(scale.unit = T, quali.sup = c(1, 2))
+```
